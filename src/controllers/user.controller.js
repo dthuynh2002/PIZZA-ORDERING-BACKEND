@@ -15,7 +15,7 @@ const {
 
 const createUserHandler = async (req, res) => {
   const { user_name, password, email, phone_number, role_id } = req.body;
-  if (!user_name || !password || !email || !phone_number || !role_id) {
+  if (!user_name || !password || !email || !phone_number) {
     return res.status(400).json({ message: "Missing required fields" });
   }
   if (!password.match(PASSWORD_VALIDATION)) {
