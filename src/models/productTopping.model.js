@@ -8,6 +8,12 @@ module.exports = (sequelize, DataTypes) => {
   }
   ProductTopping.init(
     {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
+      },
       topping_id: {
         type: DataTypes.UUID,
         primaryKey: true,

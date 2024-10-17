@@ -36,6 +36,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
       },
       order_code: {
         type: DataTypes.STRING(6),
