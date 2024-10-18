@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
       },
       quantity: {
         type: DataTypes.INTEGER,
@@ -43,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       product_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      size_id: {
         type: DataTypes.UUID,
         allowNull: false,
       },

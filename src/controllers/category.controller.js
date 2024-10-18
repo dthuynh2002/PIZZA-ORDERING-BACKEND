@@ -149,7 +149,7 @@ const getCategoryByIdHandler = async (req, res) => {
 };
 
 const getAllCategoriesHandler = async (req, res) => {
-  const { status, page = 1, limit = 5 } = req.body;
+  const { status, page = 1, limit = 5 } = req.query;
   const offset = (page - 1) * parseInt(limit);
   let categories = [];
   if (status === "true" || status === true)

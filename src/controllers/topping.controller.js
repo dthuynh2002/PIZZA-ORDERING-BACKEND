@@ -151,7 +151,7 @@ const getToppingByIdHandler = async (req, res) => {
 };
 
 const getAllToppingsHandler = async (req, res) => {
-  const { status, page = 1, limit = 5 } = req.body;
+  const { status, page = 1, limit = 5 } = req.query;
   const offset = (page - 1) * parseInt(limit);
   let toppings = [];
   if (status === "true" || status === true)

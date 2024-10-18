@@ -147,7 +147,7 @@ const getSizeByIdHandler = async (req, res) => {
 };
 
 const getAllSizesHandler = async (req, res) => {
-  const { status, page = 1, limit = 5 } = req.body;
+  const { status, page = 1, limit = 5 } = req.query;
   const offset = (page - 1) * parseInt(limit);
   let sizes = [];
   if (status === "true" || status === true)
