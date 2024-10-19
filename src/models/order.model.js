@@ -91,8 +91,8 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DELIVERY_METHOD_CODE["DELIVERY"],
       },
       order_date: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       user_id: {
         type: DataTypes.UUID,

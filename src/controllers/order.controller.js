@@ -26,7 +26,6 @@ const createOrderHandler = async (req, res) => {
       payment_status,
       payment_method,
       delivery_method,
-      order_date,
       user_id,
       name,
       email,
@@ -69,7 +68,7 @@ const createOrderHandler = async (req, res) => {
       });
     }
 
-    const custom_oder = {
+    let custom_oder = {
       name: name,
       email: email,
       phone: phone,
@@ -87,6 +86,7 @@ const createOrderHandler = async (req, res) => {
       payment_method: payment_method
         ? payment_method
         : PAYMENT_METHOD_CODE["COD"],
+      order_date: "",
     };
     const newOrder = await orderService.createOrder(custom_oder);
     if (!newOrder) {
@@ -95,6 +95,21 @@ const createOrderHandler = async (req, res) => {
         message: "Có lỗi xảy ra khi tạo đơn hàng",
       });
     }
+    const createdAt = newOrder?.createdAt;
+    let order_date = createdAt.toLocaleString(
+      "vi-VN",
+      { timeZone: "Asia/Ho_Chi_Minh" },
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      }
+    );
+    newOrder.order_date = order_date;
+    await newOrder.save();
+
     return res.status(200).json({
       status: true,
       message: "Tạo đơn hàng thành công",
