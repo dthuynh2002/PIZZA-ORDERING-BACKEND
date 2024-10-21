@@ -1,5 +1,9 @@
 const orderService = require("../services/order.service");
 const ShortUniqueId = require("short-unique-id");
+const { sequelize } = require("../models");
+const productService = require("../services/product.service");
+const sizeService = require("../services/size.service");
+const orderDetailService = require("../services/orderDetail.service");
 const {
   DELIVERY_METHOD_CODE,
   ORDER_STATUS_CODE,
@@ -30,6 +34,7 @@ const createOrderHandler = async (req, res) => {
       name,
       email,
       phone,
+      detail,
     } = req.body;
     if (
       !total_quantity ||
@@ -88,38 +93,134 @@ const createOrderHandler = async (req, res) => {
         : PAYMENT_METHOD_CODE["COD"],
       order_date: "",
     };
-    const newOrder = await orderService.createOrder(custom_oder);
-    if (!newOrder) {
+
+    const t = await sequelize.transaction();
+    try {
+      const newOrder = await orderService.createOrder(custom_oder, {
+        transaction: t,
+      });
+      if (!newOrder) {
+        await t.rollback();
+        return res.status(500).json({
+          status: false,
+          message: "Có lỗi xảy ra khi tạo đơn hàng",
+        });
+      }
+
+      if (detail && Array.isArray(detail)) {
+        for (let item of detail) {
+          const { quantity, price, total_price, product_id, size_id } = item;
+
+          if (!quantity || !price || !total_price || !product_id || !size_id) {
+            await t.rollback();
+            return res.status(400).json({
+              status: false,
+              message: "Chi tiết order là bắt buộc",
+              data: {},
+            });
+          }
+
+          const existedProduct = await productService.findProductById(
+            product_id
+          );
+          if (!existedProduct) {
+            await t.rollback();
+            return res.status(404).json({
+              status: false,
+              message: "Sản phẩm không tồn tại",
+              data: {},
+            });
+          }
+
+          const existedSize = await sizeService.findSizeById(size_id);
+          if (!existedSize) {
+            await t.rollback();
+            return res.status(404).json({
+              status: false,
+              message: "Size không tồn tại",
+              data: {},
+            });
+          }
+
+          if (price < 0) {
+            await t.rollback();
+            return res.status(400).json({
+              status: false,
+              message: "Giá sản phẩm phải là số dương",
+              data: {},
+            });
+          }
+
+          if (quantity <= 0) {
+            await t.rollback();
+            return res.status(400).json({
+              status: false,
+              message: "Số lượng phải lớn hơn 0",
+              data: {},
+            });
+          }
+
+          await orderDetailService.createOrderDetail(
+            {
+              quantity,
+              price,
+              total_price,
+              order_id: newOrder.id,
+              product_id,
+              size_id,
+            },
+            { transaction: t }
+          );
+        }
+      }
+
+      const createdAt = newOrder?.createdAt;
+      let order_date = createdAt.toLocaleString(
+        "vi-VN",
+        { timeZone: "Asia/Ho_Chi_Minh" },
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        }
+      );
+      newOrder.order_date = order_date;
+      await newOrder.save();
+      await t.commit();
+
+      return res.status(200).json({
+        status: true,
+        message: "Tạo đơn hàng thành công",
+        data: {
+          ...newOrder.dataValues,
+          ...(detail && {
+            details: detail.map((item) => ({
+              quantity: item.quantity,
+              price: item.price,
+              total_price: item.total_price,
+              product_id: item.product_id,
+              size_id: item.size_id,
+              product_name: item.product ? item.product.name : null,
+              size_name: item.size ? item.size.name : null,
+            })),
+          }),
+        },
+      });
+    } catch (error) {
+      console.error(error);
       return res.status(500).json({
         status: false,
         message: "Có lỗi xảy ra khi tạo đơn hàng",
       });
     }
-    const createdAt = newOrder?.createdAt;
-    let order_date = createdAt.toLocaleString(
-      "vi-VN",
-      { timeZone: "Asia/Ho_Chi_Minh" },
-      {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-      }
-    );
-    newOrder.order_date = order_date;
-    await newOrder.save();
-
-    return res.status(200).json({
-      status: true,
-      message: "Tạo đơn hàng thành công",
-      data: newOrder,
-    });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    await t.rollback();
     return res.status(500).json({
       status: false,
       message: "Có lỗi xảy ra khi tạo đơn hàng",
+      data: {},
     });
   }
 };
