@@ -69,26 +69,26 @@ module.exports = (sequelize, DataTypes) => {
       },
       order_status: {
         type: DataTypes.ENUM(...ORDER_STATUS_KEYS),
-        defaultValue: ORDER_STATUS_CODE["PENDING"],
+        defaultValue: ORDER_STATUS_CODE["Chờ xác nhận"],
         allowNull: false,
       },
       payment_status: {
         type: DataTypes.ENUM(
-          PAYMENT_STATUS_CODE["UNPAID"],
-          PAYMENT_STATUS_CODE["PAID"]
+          PAYMENT_STATUS_CODE["Chưa thanh toán"],
+          PAYMENT_STATUS_CODE["Đã thanh toán"]
         ),
-        defaultValue: PAYMENT_STATUS_CODE["UNPAID"],
+        defaultValue: PAYMENT_STATUS_CODE["Chưa thanh toán"],
       },
       payment_method: {
         type: DataTypes.ENUM(...PAYMENT_METHOD_KEYS),
-        defaultValue: PAYMENT_METHOD_CODE["COD"],
+        defaultValue: PAYMENT_METHOD_CODE["Thanh toán khi nhận hàng"],
       },
       delivery_method: {
         type: DataTypes.ENUM(
-          DELIVERY_METHOD_CODE["DELIVERY"],
-          DELIVERY_METHOD_CODE["CARRYOUT"]
+          DELIVERY_METHOD_CODE["Giao hàng"],
+          DELIVERY_METHOD_CODE["Mang về"]
         ),
-        defaultValue: DELIVERY_METHOD_CODE["DELIVERY"],
+        defaultValue: DELIVERY_METHOD_CODE["Giao hàng"],
       },
       order_date: {
         type: DataTypes.STRING,

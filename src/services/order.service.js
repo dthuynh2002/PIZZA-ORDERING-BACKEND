@@ -40,6 +40,20 @@ const findOrders = async (id, { offset, limit }) => {
     where: { user_id: id },
     offset,
     limit,
+    include: [
+      {
+        model: db.OrderDetail,
+        as: "orderDetails",
+        attributes: [
+          "id",
+          "quantity",
+          "price",
+          "total_price",
+          "product_id",
+          "size_id",
+        ],
+      },
+    ],
   });
   return orders;
 };

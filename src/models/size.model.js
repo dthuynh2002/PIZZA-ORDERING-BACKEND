@@ -9,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "size_id",
         as: "sizes",
       });
+
+      Size.hasMany(models.OrderDetail, {
+        foreignKey: "size_id",
+        as: "sizeOrder",
+      });
     }
   }
   Size.init(

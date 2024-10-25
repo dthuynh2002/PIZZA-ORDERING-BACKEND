@@ -45,16 +45,7 @@ router.delete(
   ],
   sizeController.deleteSizeByIdHandler
 );
-router.get(
-  "/get/:id",
-  [
-    deserializeUser,
-    restrictTo([
-      "449cbc4f-1901-4724-8881-c5fc3b6253e1", // ADMIN
-    ]),
-  ],
-  sizeController.getSizeByIdHandler
-);
+router.get("/get/:id", deserializeUser, sizeController.getSizeByIdHandler);
 router.get(
   "/get-all",
   [

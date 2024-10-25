@@ -79,18 +79,18 @@ const createOrderHandler = async (req, res) => {
       phone: phone,
       total_quantity: total_quantity,
       total_price: total_price,
-      order_status: ORDER_STATUS_CODE["PENDING"],
+      order_status: ORDER_STATUS_CODE["Chờ xác nhận"],
       payment_status: payment_status
         ? payment_status
-        : PAYMENT_STATUS_CODE["UNPAID"],
+        : PAYMENT_STATUS_CODE["Chưa thanh toán"],
       order_code: orderCode,
       user_id: req.user.id,
       delivery_method: delivery_method
         ? delivery_method
-        : DELIVERY_METHOD_CODE["DELIVERY"],
+        : DELIVERY_METHOD_CODE["Giao hàng"],
       payment_method: payment_method
         ? payment_method
-        : PAYMENT_METHOD_CODE["COD"],
+        : PAYMENT_METHOD_CODE["Thanh toán khi nhận hàng"],
       order_date: "",
     };
 
@@ -365,7 +365,30 @@ const getAllOrdersHandler = async (req, res) => {
   return res.status(200).json({
     status: true,
     message: "Lấy thông tin đơn hàng thành công",
-    data: orders.rows,
+    data: orders.rows.map((item) => ({
+      id: item.id,
+      order_code: item.order_code,
+      total_price: item.total_price,
+      total_quantity: item.total_quantity,
+      order_status: item.order_status,
+      payment_status: item.payment_status,
+      payment_method: item.payment_method,
+      delivery_method: item.delivery_method,
+      order_date: item.order_date,
+      notes: item.notes,
+      user_id: item.user_id,
+      name: item.name ? item.name : "Không xác định",
+      email: item.email ? item.email : "Không xác định",
+      phone: item.phone ? item.phone : "Không xác định",
+      detail: item.orderDetails.map((detailItem) => ({
+        id: detailItem.id,
+        quantity: detailItem.quantity,
+        price: detailItem.price,
+        total_price: detailItem.total_price,
+        product_id: detailItem.product_id,
+        size_id: detailItem.size_id,
+      })),
+    })),
     total: orders.count,
     page: parseInt(page),
     limit: parseInt(limit),
