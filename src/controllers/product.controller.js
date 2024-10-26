@@ -221,8 +221,14 @@ const getAllProductsHandler = async (req, res) => {
 };
 
 const getProductsHandler = async (req, res) => {
+  const { page = 1, limit = 5 } = req.query;
+  const offset = (page - 1) * parseInt(limit);
   let products = [];
-  products = await productService.getAllProducts({ active: { status: true } });
+  products = await productService.getAllProducts({
+    active: { status: true },
+    offset: offset,
+    limit: parseInt(limit),
+  });
   return res.status(200).json({
     status: true,
     message: "Lấy tất cả sản phẩm hoạt thành công",

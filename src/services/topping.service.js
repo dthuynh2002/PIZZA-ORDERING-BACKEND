@@ -20,9 +20,9 @@ const findToppingById = async (id) => {
   return topping;
 };
 
-const updateToppingById = async (data) => {
+const updateToppingById = async (id, data) => {
   try {
-    const topping = await findToppingById(data.id);
+    const topping = await findToppingById(id);
     if (!topping) return null;
     await topping.update(data);
     return topping;
@@ -37,12 +37,12 @@ const updateTopping = async (id, status) => {
 };
 
 const deleteToppingById = async (id) => {
-  return await db.Topping.update({ where: { id } });
+  return await db.Topping.destroy({ where: { id } });
 };
 
-const findToppings = async ({ status, offet, limit }) => {
+const findToppings = async ({ status, offset, limit }) => {
   const toppings = await db.Topping.findAndCountAll({
-    where: { status },
+    where: status,
     offset,
     limit,
   });

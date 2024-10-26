@@ -324,7 +324,7 @@ const createStaffHandler = async (req, res) => {
 const updateStatusHandler = async (req, res) => {
   const { id } = req.params;
   const { active } = req.body;
-  if (!id || !active) {
+  if (!id) {
     return res.status(400).json({ message: "Missing required fields" });
   }
   let activeVar = true;

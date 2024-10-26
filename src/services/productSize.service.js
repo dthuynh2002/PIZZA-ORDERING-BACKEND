@@ -30,8 +30,10 @@ const deleteProductSizeById = async (id) => {
   return await db.ProductSize.destroy({ where: { id } });
 };
 
-const getAllProductSizes = async () => {
-  const productSizes = await db.ProductSize.findAll();
+const getAllProductSizes = async (productId) => {
+  const productSizes = await db.ProductSize.findAll({
+    where: { product_id: productId },
+  });
   return productSizes;
 };
 

@@ -131,7 +131,8 @@ const getProductSizeHandler = async (req, res) => {
 };
 
 const getProductSizeAllHandler = async (req, res) => {
-  const productSizes = await productSizeService.getAllProductSizes();
+  const { product_id } = req.query;
+  const productSizes = await productSizeService.getAllProductSizes(product_id);
   return res.status(200).json({
     status: true,
     message: "Lấy tất cả kích cỡ sản phẩm thành công",

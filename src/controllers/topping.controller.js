@@ -167,7 +167,7 @@ const getAllToppingsHandler = async (req, res) => {
       limit: parseInt(limit),
     });
   else
-    toppings = await categoryService.findToppings({
+    toppings = await toppingService.findToppings({
       status: {},
       offset,
       limit: parseInt(limit),
@@ -184,7 +184,7 @@ const getAllToppingsHandler = async (req, res) => {
 
 const getToppingsHandler = async (req, res) => {
   let toppings = [];
-  toppings = await categoryService.findToppings({
+  toppings = await toppingService.findToppings({
     status: { status: true },
   });
   return res.status(200).json({
