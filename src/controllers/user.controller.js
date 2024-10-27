@@ -16,27 +16,29 @@ const {
 const createUserHandler = async (req, res) => {
   const { user_name, password, email, phone_number, role_id } = req.body;
   if (!user_name || !password || !email || !phone_number) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res
+      .status(400)
+      .json({ message: "Không được để trống các trường bắt buộc" });
   }
   if (!password.match(PASSWORD_VALIDATION)) {
     return res.status(400).json({
       status: false,
       message:
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+        "Mật khẩu phải dài ít nhất tám ký tự, có ít nhất một chữ hoa, một chữ thường, một số, một ký tự đặc biệt.",
       data: {},
     });
   }
   if (!email.match(EMAIL_VALIDATION)) {
     return res.status(400).json({
       status: false,
-      message: "Invalid email format",
+      message: "Email không hợp lệ",
       data: {},
     });
   }
   if (!phone_number.match(PHONE_NUMBER_VALIDATION)) {
     return res.status(400).json({
       status: false,
-      message: "Invalid phone number format",
+      message: "Số điện thoại không hợp lệ",
       data: {},
     });
   }
@@ -44,7 +46,7 @@ const createUserHandler = async (req, res) => {
   if (checkUser) {
     return res.status(409).json({
       status: false,
-      message: "Email already exists",
+      message: "Email đã tồn tại",
       data: {},
     });
   }
@@ -52,7 +54,7 @@ const createUserHandler = async (req, res) => {
   if (checkPhone) {
     return res.status(409).json({
       status: false,
-      message: "Phone number already exists",
+      message: "Số điện thoại đã tồn tại",
       data: {},
     });
   }
@@ -69,13 +71,13 @@ const createUserHandler = async (req, res) => {
   if (newUser) {
     return res.status(201).json({
       status: true,
-      message: "User created successfully.",
+      message: "Tạo tài khoản thành công",
       data: newUser,
     });
   } else {
     return res.status(404).json({
       status: false,
-      message: "Failed to create user.",
+      message: "Tạo tài khoản thất bại",
       data: {},
     });
   }
@@ -83,20 +85,22 @@ const createUserHandler = async (req, res) => {
 const loginHandler = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res
+      .status(400)
+      .json({ message: "Các trường bắt buộc không được để trống" });
   }
   if (!password.match(PASSWORD_VALIDATION)) {
     return res.status(400).json({
       status: false,
       message:
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+        "Mật khẩu phải dài ít nhất tám ký tự, có ít nhất một chữ hoa, một chữ thường, một số, một ký tự đặc biệt.",
       data: {},
     });
   }
   if (!email.match(EMAIL_VALIDATION)) {
     return res.status(400).json({
       status: false,
-      message: "Invalid email format",
+      message: "Email không hợp lại",
       data: {},
     });
   }
@@ -104,7 +108,7 @@ const loginHandler = async (req, res) => {
   if (!user) {
     return res.status(404).json({
       status: false,
-      message: "User not found",
+      message: "Người dùng không tồn tại",
       data: {},
     });
   }
@@ -112,14 +116,14 @@ const loginHandler = async (req, res) => {
   if (!isMatch) {
     return res.status(401).json({
       status: false,
-      message: "Invalid credentials",
+      message: "Thông tin tài khoản hoặc mật khẩu không chính xác",
       data: {},
     });
   }
   if (!user.active) {
     return res.status(401).json({
       status: false,
-      message: "User account is not active",
+      message: "Tài khoản người dùng đã bị khóa",
       data: {},
     });
   }
@@ -139,7 +143,7 @@ const loginHandler = async (req, res) => {
   });
   return res.status(200).json({
     status: true,
-    message: "Login successful",
+    message: "Đăng nhập thành công",
     data: { name: user.user_name, email: user.email, access_token },
   });
 };
@@ -149,7 +153,7 @@ const updateHandler = async (req, res) => {
   if (!id) {
     return res.status(401).json({
       status: false,
-      message: "Nothing was updated",
+      message: "Không có sự thay đổi",
       data: {},
     });
   }
@@ -167,13 +171,13 @@ const updateHandler = async (req, res) => {
   if (user) {
     return res.status(200).json({
       status: true,
-      message: "User updated successfully.",
+      message: "Cập nhật thông tin người dùng thành công.",
       data: user,
     });
   } else {
     return res.status(400).json({
       status: false,
-      message: "Failed to update user.",
+      message: "Cập nhật thông tin người dùng thất bại.",
       data: {},
     });
   }
@@ -185,13 +189,13 @@ const getProfileHandler = async (req, res) => {
   if (!id) {
     return res.status(401).json({
       status: false,
-      message: "User not found",
+      message: "Không tìm thấy người dùng",
       data: {},
     });
   } else {
     return res.status(200).json({
       status: true,
-      message: "User profile retrieved successfully.",
+      message: "Lấy thông tin người dùng thành công",
       data: user,
     });
   }
@@ -209,7 +213,7 @@ const changePasswordHandler = async (req, res) => {
   if (!currentPassword || !newPassword) {
     return res.status(400).json({
       status: false,
-      message: "Missing required fields",
+      message: "Không được để trống các trường bắt buộc",
       data: {},
     });
   }
@@ -220,7 +224,7 @@ const changePasswordHandler = async (req, res) => {
     return res.status(400).json({
       status: false,
       message:
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+        "Mật khẩu phải dài ít nhất tám ký tự, có ít nhất một chữ hoa, một chữ thường, một số, một ký tự đặc biệt.",
       data: {},
     });
   }
@@ -256,27 +260,29 @@ const refreshTokenHandler = async (req, res) => {
 const createStaffHandler = async (req, res) => {
   const { user_name, password, email, phone_number, role_id } = req.body;
   if (!user_name || !password || !email || !phone_number || !role_id) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res
+      .status(400)
+      .json({ message: "Các trường bắt buộc không được để trống" });
   }
   if (!password.match(PASSWORD_VALIDATION)) {
     return res.status(400).json({
       status: false,
       message:
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+        "Mật khẩu phải dài ít nhất tám ký tự, có ít nhất một chữ hoa, một chữ thường, một số, một ký tự đặc biệt.",
       data: {},
     });
   }
   if (!email.match(EMAIL_VALIDATION)) {
     return res.status(400).json({
       status: false,
-      message: "Invalid email format",
+      message: "Email không hợp lệ",
       data: {},
     });
   }
   if (!phone_number.match(PHONE_NUMBER_VALIDATION)) {
     return res.status(400).json({
       status: false,
-      message: "Invalid phone number format",
+      message: "Số điện thoại không hợp lệ",
       data: {},
     });
   }
@@ -284,7 +290,7 @@ const createStaffHandler = async (req, res) => {
   if (checkUser) {
     return res.status(409).json({
       status: false,
-      message: "Email already exists",
+      message: "Email đã tồn tại",
       data: {},
     });
   }
@@ -292,7 +298,7 @@ const createStaffHandler = async (req, res) => {
   if (checkPhone) {
     return res.status(409).json({
       status: false,
-      message: "Phone number already exists",
+      message: "Số điện thoại này đã tồn tại",
       data: {},
     });
   }
@@ -309,13 +315,13 @@ const createStaffHandler = async (req, res) => {
   if (newUser) {
     return res.status(201).json({
       status: true,
-      message: "User created successfully.",
+      message: "Tạo mới nhân viên thành công.",
       data: newUser,
     });
   } else {
     return res.status(404).json({
       status: false,
-      message: "Failed to create user.",
+      message: "Tạo mới nhân viên thất bại.",
       data: {},
     });
   }
@@ -325,16 +331,14 @@ const updateStatusHandler = async (req, res) => {
   const { id } = req.params;
   const { active } = req.body;
   if (!id) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res.status(400).json({ message: "Id là bắt buộc" });
   }
   let activeVar = true;
   if (active === "false" || active === false) activeVar = false;
   await userService.updateUser(id, { active: activeVar });
   return res.status(200).json({
     status: true,
-    message: activeVar
-      ? "User was active successfully"
-      : "User was inactive successfully",
+    message: activeVar ? "Tài khoản đã được kích hoạt" : "Tài khoản đã bị khóa",
   });
 };
 
@@ -366,7 +370,7 @@ const getAllUsersHandler = async (req, res) => {
     });
   return res.status(200).json({
     status: true,
-    message: "Users retrieved successfully.",
+    message: "Lấy danh sách người dùng thành công.",
     data: users,
     total: users.length,
     page: parseInt(page),
@@ -402,7 +406,7 @@ const getAllStaffsHandler = async (req, res) => {
     });
   return res.status(200).json({
     status: true,
-    message: "Staffs retrieved successfully.",
+    message: "Lấy danh sách nhân viên thành công.",
     data: staffs,
     total: staffs.length,
     page: parseInt(page),
@@ -438,7 +442,7 @@ const getAllAdminsHandler = async (req, res) => {
     });
   return res.status(200).json({
     status: true,
-    message: "Admins retrieved successfully.",
+    message: "Lấy danh sách quản lý thành công.",
     data: admins,
     total: admins.length,
     page: parseInt(page),

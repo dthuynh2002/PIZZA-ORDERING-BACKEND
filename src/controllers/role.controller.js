@@ -69,6 +69,50 @@ const getNameHandler = async (req, res) => {
   }
 };
 
+const updateRoleByIdHandler = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(404).json({
+      status: false,
+      message: "Id là bắt buộc",
+      data: {},
+    });
+  }
+  const { name } = req.body;
+  if (!name && Object.values(ROLE_CODE).indexOf(name) === -1) {
+    return res.status(400).json({
+      status: false,
+      message: "Các trường bắc buộc không được để trống",
+      data: {},
+    });
+  }
+
+  if (name) {
+    const existedRole = await roleService.getName({ name });
+    if (existedRole) {
+      return res.status(400).json({
+        status: false,
+        message: "Tên Role đã tồn tại",
+        data: {},
+      });
+    }
+
+    const updatedRole = await roleService.updateRoleById(id, req.body);
+    if (updatedRole) {
+      return res.status(200).json({
+        status: true,
+        message: "Cập nhật thông tin vai trò thành công",
+        data: updatedRole,
+      });
+    } else {
+      return res.status(404).json({
+        status: false,
+        message: "Cập nhật thông tin vai trò thất bại",
+      });
+    }
+  }
+};
+
 const getAll = async (req, res) => {
   const { page = 1, limit = 5 } = req.query;
   const offset = (page - 1) * parseInt(limit);
@@ -92,4 +136,5 @@ module.exports = {
   getInfoHandler,
   getNameHandler,
   getAll,
+  updateRoleByIdHandler,
 };
