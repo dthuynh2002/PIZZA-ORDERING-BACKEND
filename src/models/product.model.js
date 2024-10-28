@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: true,
       },
       sale: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.INTEGER,
         defaultValue: 0,
       },
       category_id: {

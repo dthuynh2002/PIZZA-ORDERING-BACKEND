@@ -3,7 +3,6 @@ const { omit } = require("lodash");
 const db = require("../models/index");
 
 const createProductSize = async (data) => {
-  console.log("check data: ", data);
   const productSize = await db.ProductSize.create(data);
   return omit(productSize.toJSON(), ["createdAt", "updatedAt"]);
 };

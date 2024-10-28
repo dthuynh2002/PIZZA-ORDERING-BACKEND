@@ -2,7 +2,8 @@ const productService = require("../services/product.service");
 const categoryService = require("../services/category.service");
 
 const createProductHandler = async (req, res) => {
-  const { name_product, description, price, quantity, category_id } = req.body;
+  const { name_product, description, price, quantity, category_id, sale } =
+    req.body;
   if (!name_product || !description || !price || !quantity || !category_id) {
     return res.status(400).json({
       message: "Các trường là bắt buộc",
@@ -39,6 +40,7 @@ const createProductHandler = async (req, res) => {
     quantity,
     ...(imageProduct && { image: imageProduct }),
     category_id,
+    sale: sale || 0,
   });
   if (!product) {
     return res.status(500).json({
@@ -63,8 +65,15 @@ const updateProductByIdHandler = async (req, res) => {
       data: {},
     });
   }
-  const { name_product, description, price, quantity, category_id, status } =
-    req.body;
+  const {
+    name_product,
+    description,
+    price,
+    quantity,
+    category_id,
+    status,
+    sale,
+  } = req.body;
   if (status !== undefined && status !== null && typeof status !== "boolean") {
     return res.status(400).json({
       status: false,
@@ -96,6 +105,7 @@ const updateProductByIdHandler = async (req, res) => {
     ...(imageProduct && { image: imageProduct }),
     category_id,
     status,
+    sale: sale || 0,
   });
   if (!product) {
     return res.status(500).json({
