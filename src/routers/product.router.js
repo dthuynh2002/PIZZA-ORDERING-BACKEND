@@ -12,6 +12,7 @@ router.post(
 );
 router.put(
   "/update/:id",
+  upload.single("image"),
   [
     deserializeUser,
     restrictTo([

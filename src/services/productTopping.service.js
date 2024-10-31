@@ -29,8 +29,10 @@ const deleteProductToppingById = async (id) => {
   return await db.ProductTopping.destroy({ where: { id } });
 };
 
-const getAllProductToppings = async () => {
-  const productToppings = await db.ProductTopping.findAll();
+const getAllProductToppings = async (productId) => {
+  const productToppings = await db.ProductTopping.findAll({
+    where: { product_id: productId },
+  });
   return productToppings;
 };
 

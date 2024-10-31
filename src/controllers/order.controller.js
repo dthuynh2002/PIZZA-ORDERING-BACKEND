@@ -35,18 +35,9 @@ const createOrderHandler = async (req, res) => {
       email,
       phone,
       detail,
+      notes,
     } = req.body;
-    if (
-      !total_quantity ||
-      !total_price ||
-      !order_status ||
-      !payment_status ||
-      !payment_method ||
-      !delivery_method ||
-      !name ||
-      !email ||
-      !phone
-    ) {
+    if (!total_quantity || !total_price || !name || !email || !phone) {
       return res.status(400).json({
         message: "Các trường là bắt buộc",
       });
@@ -79,19 +70,20 @@ const createOrderHandler = async (req, res) => {
       phone: phone,
       total_quantity: total_quantity,
       total_price: total_price,
-      order_status: ORDER_STATUS_CODE["Chờ xác nhận"],
+      order_status: ORDER_STATUS_CODE["PENDING"],
       payment_status: payment_status
         ? payment_status
-        : PAYMENT_STATUS_CODE["Chưa thanh toán"],
+        : PAYMENT_STATUS_CODE["UNPAID"],
       order_code: orderCode,
       user_id: req.user.id,
       delivery_method: delivery_method
         ? delivery_method
-        : DELIVERY_METHOD_CODE["Giao hàng"],
+        : DELIVERY_METHOD_CODE["DELIVERY"],
       payment_method: payment_method
         ? payment_method
-        : PAYMENT_METHOD_CODE["Thanh toán khi nhận hàng"],
+        : PAYMENT_METHOD_CODE["COD"],
       order_date: "",
+      notes,
     };
 
     const t = await sequelize.transaction();
@@ -209,14 +201,14 @@ const createOrderHandler = async (req, res) => {
         },
       });
     } catch (error) {
-      console.error(error);
+      await t.rollback();
       return res.status(500).json({
         status: false,
         message: "Có lỗi xảy ra khi tạo đơn hàng",
       });
     }
   } catch (err) {
-    await t.rollback();
+    console.error(err);
     return res.status(500).json({
       status: false,
       message: "Có lỗi xảy ra khi tạo đơn hàng",
@@ -277,30 +269,28 @@ const getTrackingHandler = async (req, res) => {
 
 const changeStatusOrderHandler = async (req, res) => {
   const { id } = req.params;
-  const { status, notes } = req.query;
+  const { status } = req.query;
   if (!id) {
     return res.status(400).json({
       status: false,
       message: "Id đơn hàng là bắt buộc",
     });
   }
-  if (!ORDER_STATUS_KEYS.includes(status.toUpperCase())) {
+  if (!ORDER_STATUS_KEYS) {
     return res.status(400).json({
       status: false,
       message: "Trạng thái đơn hàng không hợp lệ",
     });
   }
   let order;
-  if (status.toUpperCase() === ORDER_STATUS_CODE["DELIVERED"]) {
+  if (status === ORDER_STATUS_CODE["DELIVERED"]) {
     order = await orderService.updateOrderById(id, {
       order_status: ORDER_STATUS_CODE["DELIVERED"],
       payment_status: PAYMENT_STATUS_CODE["PAID"],
-      notes: notes,
     });
   } else {
     order = await orderService.updateOrderById(id, {
       order_status: status.toUpperCase(),
-      notes: notes,
     });
   }
   if (!order) {
@@ -395,6 +385,49 @@ const getAllOrdersHandler = async (req, res) => {
   });
 };
 
+// Lấy tất cả order của hệ thống
+const allOrdersHandler = async (req, res) => {
+  const { page = 1, limit = 5 } = req.query;
+  const offset = (page - 1) * parseInt(limit);
+
+  const orders = await orderService.allOrders({
+    offset,
+    limit: parseInt(limit),
+  });
+
+  return res.status(200).json({
+    status: true,
+    message: "Lấy thông tin đơn hàng thành công",
+    data: orders.rows.map((item) => ({
+      id: item.id,
+      order_code: item.order_code,
+      total_price: item.total_price,
+      total_quantity: item.total_quantity,
+      order_status: item.order_status,
+      payment_status: item.payment_status,
+      payment_method: item.payment_method,
+      delivery_method: item.delivery_method,
+      order_date: item.order_date,
+      notes: item.notes,
+      user_id: item.user_id,
+      name: item.name ? item.name : "Không xác định",
+      email: item.email ? item.email : "Không xác định",
+      phone: item.phone ? item.phone : "Không xác định",
+      detail: item.orderDetails.map((detailItem) => ({
+        id: detailItem.id,
+        quantity: detailItem.quantity,
+        price: detailItem.price,
+        total_price: detailItem.total_price,
+        product_id: detailItem.product_id,
+        size_id: detailItem.size_id,
+      })),
+    })),
+    total: orders.count,
+    page: parseInt(page),
+    limit: parseInt(limit),
+  });
+};
+
 module.exports = {
   createOrderHandler,
   deleteOrderHandler,
@@ -402,4 +435,5 @@ module.exports = {
   changeStatusOrderHandler,
   changePaymentStatsHandler,
   getAllOrdersHandler,
+  allOrdersHandler,
 };

@@ -21,4 +21,6 @@ router.patch(
 );
 router.get("/get-all", deserializeUser, orderController.getAllOrdersHandler);
 
+router.get("/all", deserializeUser, orderController.allOrdersHandler);
+
 module.exports = router;

@@ -146,7 +146,10 @@ const getProductToppingHandler = async (req, res) => {
 };
 
 const getAllProductToppingHandler = async (req, res) => {
-  const productToppings = await productToppingService.getAllProductToppings();
+  const { product_id } = req.query;
+  const productToppings = await productToppingService.getAllProductToppings(
+    product_id
+  );
   return res.status(200).json({
     status: true,
     message: "Lấy tất cả kích cỡ sản phẩm thành công",

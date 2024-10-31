@@ -45,7 +45,7 @@ router.delete(
   ],
   sizeController.deleteSizeByIdHandler
 );
-router.get("/get/:id", deserializeUser, sizeController.getSizeByIdHandler);
+router.get("/get/:id", sizeController.getSizeByIdHandler);
 router.get(
   "/get-all",
   [

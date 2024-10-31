@@ -36,7 +36,11 @@ const updateOrderByCode = async (code, data) => {
 };
 
 const findOrders = async (id, { offset, limit }) => {
-  const orders = await db.Order.findAndCountAll({
+  const totalOrders = await db.Order.count({
+    where: { user_id: id },
+  });
+
+  const orders = await db.Order.findAll({
     where: { user_id: id },
     offset,
     limit,
@@ -55,7 +59,40 @@ const findOrders = async (id, { offset, limit }) => {
       },
     ],
   });
-  return orders;
+
+  return {
+    rows: orders,
+    count: totalOrders,
+  };
+};
+
+// Private
+const allOrders = async ({ offset, limit }) => {
+  const orders = await db.Order.findAll({
+    offset,
+    limit,
+    include: [
+      {
+        model: db.OrderDetail,
+        as: "orderDetails",
+        attributes: [
+          "id",
+          "quantity",
+          "price",
+          "total_price",
+          "product_id",
+          "size_id",
+        ],
+      },
+    ],
+  });
+
+  const totalOrders = await db.Order.count();
+
+  return {
+    rows: orders,
+    count: totalOrders,
+  };
 };
 
 const findOrderById = async (id) => {
@@ -73,4 +110,5 @@ module.exports = {
   updateOrderByCode,
   findOrders,
   findOrderById,
+  allOrders,
 };
