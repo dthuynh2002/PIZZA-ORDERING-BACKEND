@@ -103,7 +103,7 @@ const createOrderHandler = async (req, res) => {
         for (let item of detail) {
           const { quantity, price, total_price, product_id, size_id } = item;
 
-          if (!quantity || !price || !total_price || !product_id || !size_id) {
+          if (!quantity || !price || !total_price || !product_id) {
             await t.rollback();
             return res.status(400).json({
               status: false,
@@ -122,6 +122,9 @@ const createOrderHandler = async (req, res) => {
               message: "Sản phẩm không tồn tại",
               data: {},
             });
+          }
+
+          if (size_id) {
           }
 
           const existedSize = await sizeService.findSizeById(size_id);
