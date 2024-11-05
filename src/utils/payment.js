@@ -1,6 +1,6 @@
 const PAYMENT_METHOD_CODE = {
   COD: "Thanh toán khi nhận hàng",
-  STRIPE: "STRIPE",
+  ZALOPAY: "ZALOPAY",
 };
 
 const PAYMENT_METHOD_KEYS = Object.keys(PAYMENT_METHOD_CODE);

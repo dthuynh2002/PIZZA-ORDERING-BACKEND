@@ -8,6 +8,7 @@ const productSize = require("./productSize.router");
 const productTopping = require("./productTopping.router");
 const orderRouter = require("./order.router");
 const orderDetail = require("./orderDetail.router");
+const payment = require("./payment.router");
 
 const routes = (app) => {
   app.use("/api/v1/user", userRouter);
@@ -20,6 +21,7 @@ const routes = (app) => {
   app.use("/api/v1/product-topping", productTopping);
   app.use("/api/v1/order", orderRouter);
   app.use("/api/v1/order-detail", orderDetail);
+  app.use("/api/v1/payment", payment);
 };
 
 module.exports = routes;

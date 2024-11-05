@@ -1,9 +1,14 @@
+const axios = require("axios").default;
+const CryptoJS = require("crypto-js");
+const moment = require("moment");
+const qs = require("qs");
 const orderService = require("../services/order.service");
 const ShortUniqueId = require("short-unique-id");
 const { sequelize } = require("../models");
 const productService = require("../services/product.service");
 const sizeService = require("../services/size.service");
 const orderDetailService = require("../services/orderDetail.service");
+const emailService = require("../services/email.service");
 const {
   DELIVERY_METHOD_CODE,
   ORDER_STATUS_CODE,
@@ -19,6 +24,11 @@ const {
   ORDER_CODE_VALIDATION,
   EMAIL_VALIDATION,
 } = require("../utils/valications");
+const configs = require("../config/paymentConfig");
+
+const { config } = require("dotenv");
+
+config();
 
 const createOrderHandler = async (req, res) => {
   try {
@@ -64,7 +74,7 @@ const createOrderHandler = async (req, res) => {
       });
     }
 
-    let custom_oder = {
+    let custom_order = {
       name: name,
       email: email,
       phone: phone,
@@ -86,128 +96,158 @@ const createOrderHandler = async (req, res) => {
       notes,
     };
 
-    const t = await sequelize.transaction();
-    try {
-      const newOrder = await orderService.createOrder(custom_oder, {
-        transaction: t,
-      });
-      if (!newOrder) {
+    if (payment_method === PAYMENT_METHOD_CODE["COD"]) {
+      const t = await sequelize.transaction();
+      try {
+        const newOrder = await orderService.createOrder(custom_order, {
+          transaction: t,
+        });
+        if (!newOrder) {
+          await t.rollback();
+          return res.status(500).json({
+            status: false,
+            message: "Có lỗi xảy ra khi tạo đơn hàng",
+          });
+        }
+
+        if (detail && Array.isArray(detail)) {
+          for (let item of detail) {
+            const { quantity, price, total_price, product_id, size_id } = item;
+
+            if (!quantity || !price || !total_price || !product_id) {
+              await t.rollback();
+              return res.status(400).json({
+                status: false,
+                message: "Chi tiết order là bắt buộc",
+                data: {},
+              });
+            }
+
+            const existedProduct = await productService.findProductById(
+              product_id
+            );
+            if (!existedProduct) {
+              await t.rollback();
+              return res.status(404).json({
+                status: false,
+                message: "Sản phẩm không tồn tại",
+                data: {},
+              });
+            }
+
+            if (existedProduct.quantity <= 0) {
+              await t.rollback();
+              return res.status(400).json({
+                status: false,
+                message: "Sản phẩm đã hết hàng",
+                data: {},
+              });
+            }
+
+            const existedSize = await sizeService.findSizeById(size_id);
+            if (!existedSize) {
+              await t.rollback();
+              return res.status(404).json({
+                status: false,
+                message: "Size không tồn tại",
+                data: {},
+              });
+            }
+
+            if (price < 0) {
+              await t.rollback();
+              return res.status(400).json({
+                status: false,
+                message: "Giá sản phẩm phải là số dương",
+                data: {},
+              });
+            }
+
+            if (quantity <= 0) {
+              await t.rollback();
+              return res.status(400).json({
+                status: false,
+                message: "Số lượng phải lớn hơn 0",
+                data: {},
+              });
+            }
+
+            const resDetail = await orderDetailService.createOrderDetail(
+              {
+                quantity,
+                price,
+                total_price,
+                order_id: newOrder.id,
+                product_id,
+                size_id,
+              },
+              { transaction: t }
+            );
+
+            await productService.updateProduct(product_id, {
+              quantity: existedProduct.quantity - resDetail.quantity,
+            });
+          }
+        }
+
+        const createdAt = newOrder?.createdAt;
+        let order_date = createdAt.toLocaleString(
+          "vi-VN",
+          { timeZone: "Asia/Ho_Chi_Minh" },
+          {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+          }
+        );
+        newOrder.order_date = order_date;
+        await newOrder.save();
+        await emailService.sendEmailCreateOrder(email, detail);
+        await t.commit();
+
+        return res.status(200).json({
+          status: true,
+          message: "Tạo đơn hàng thành công",
+          data: {
+            ...newOrder.dataValues,
+            ...(detail && {
+              details: detail.map((item) => ({
+                quantity: item.quantity,
+                price: item.price,
+                total_price: item.total_price,
+                product_id: item.product_id,
+                size_id: item.size_id,
+                product_name: item.product ? item.product.name : null,
+                size_name: item.size ? item.size.name : null,
+              })),
+            }),
+          },
+        });
+      } catch (error) {
+        console.error(error);
         await t.rollback();
         return res.status(500).json({
           status: false,
           message: "Có lỗi xảy ra khi tạo đơn hàng",
         });
       }
+    }
 
-      if (detail && Array.isArray(detail)) {
-        for (let item of detail) {
-          const { quantity, price, total_price, product_id, size_id } = item;
+    const paymentResponse = await paymentHandler(custom_order, detail);
 
-          if (!quantity || !price || !total_price || !product_id) {
-            await t.rollback();
-            return res.status(400).json({
-              status: false,
-              message: "Chi tiết order là bắt buộc",
-              data: {},
-            });
-          }
-
-          const existedProduct = await productService.findProductById(
-            product_id
-          );
-          if (!existedProduct) {
-            await t.rollback();
-            return res.status(404).json({
-              status: false,
-              message: "Sản phẩm không tồn tại",
-              data: {},
-            });
-          }
-
-          if (size_id) {
-          }
-
-          const existedSize = await sizeService.findSizeById(size_id);
-          if (!existedSize) {
-            await t.rollback();
-            return res.status(404).json({
-              status: false,
-              message: "Size không tồn tại",
-              data: {},
-            });
-          }
-
-          if (price < 0) {
-            await t.rollback();
-            return res.status(400).json({
-              status: false,
-              message: "Giá sản phẩm phải là số dương",
-              data: {},
-            });
-          }
-
-          if (quantity <= 0) {
-            await t.rollback();
-            return res.status(400).json({
-              status: false,
-              message: "Số lượng phải lớn hơn 0",
-              data: {},
-            });
-          }
-
-          await orderDetailService.createOrderDetail(
-            {
-              quantity,
-              price,
-              total_price,
-              order_id: newOrder.id,
-              product_id,
-              size_id,
-            },
-            { transaction: t }
-          );
-        }
-      }
-
-      const createdAt = newOrder?.createdAt;
-      let order_date = createdAt.toLocaleString(
-        "vi-VN",
-        { timeZone: "Asia/Ho_Chi_Minh" },
-        {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        }
-      );
-      newOrder.order_date = order_date;
-      await newOrder.save();
-      await t.commit();
-
+    if (paymentResponse && paymentResponse.order_url) {
       return res.status(200).json({
         status: true,
         message: "Tạo đơn hàng thành công",
-        data: {
-          ...newOrder.dataValues,
-          ...(detail && {
-            details: detail.map((item) => ({
-              quantity: item.quantity,
-              price: item.price,
-              total_price: item.total_price,
-              product_id: item.product_id,
-              size_id: item.size_id,
-              product_name: item.product ? item.product.name : null,
-              size_name: item.size ? item.size.name : null,
-            })),
-          }),
-        },
+        orderUrl: paymentResponse.order_url,
       });
-    } catch (error) {
-      await t.rollback();
+    } else {
       return res.status(500).json({
         status: false,
         message: "Có lỗi xảy ra khi tạo đơn hàng",
+        data: {},
       });
     }
   } catch (err) {
@@ -431,6 +471,213 @@ const allOrdersHandler = async (req, res) => {
   });
 };
 
+const paymentHandler = async (order, details) => {
+  try {
+    const items = details.map((item) => ({
+      item_id: item.product_id,
+      item_name: item.product_name || "Unknown Product",
+      item_quantity: item.quantity,
+      item_price: item.price,
+    }));
+
+    const embed_data = {
+      redirecturl:
+        `${process.env.URL_REACT}/product` || "http://localhost:3000/product",
+      order_code: order.order_code,
+      name: order.name,
+      email: order.email,
+      phone: order.phone,
+      total_price: order.total_price,
+      notes: order.notes,
+      total_quantity: order.total_quantity,
+      order_status: order.order_status,
+      payment_status: order.payment_status,
+      payment_method: order.payment_method,
+      delivery_method: order.delivery_method,
+      order_date: order.order_date,
+      user_id: order.user_id,
+      order_date: order.order_date,
+      detail: details,
+    };
+
+    const transID = Math.floor(Math.random() * 1000000);
+
+    const paymentOrder = {
+      app_id: configs.app_id,
+      app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
+      app_user: "user123",
+      app_time: Date.now(),
+      item: JSON.stringify(items),
+      embed_data: JSON.stringify(embed_data),
+      amount: order.total_price,
+      description: `Payment for the order #${order.order_code}`,
+      callback_url: `${process.env.URL_NGROK}/api/v1/payment/paymentCallback`,
+    };
+
+    const data = [
+      configs.app_id,
+      paymentOrder.app_trans_id,
+      paymentOrder.app_user,
+      paymentOrder.amount,
+      paymentOrder.app_time,
+      paymentOrder.embed_data,
+      paymentOrder.item,
+    ].join("|");
+
+    paymentOrder.mac = CryptoJS.HmacSHA256(data, configs.key1).toString();
+
+    const result = await axios.post(configs.endpoint, null, {
+      params: paymentOrder,
+    });
+
+    return result.data;
+  } catch (error) {
+    console.error("Error in paymentHandler:", error.message);
+  }
+};
+
+const paymentCallbackHandler = async (req, res) => {
+  let result = {};
+  try {
+    const dataStr = req.body.data;
+    const reqMac = req.body.mac;
+
+    const mac = CryptoJS.HmacSHA256(dataStr, configs.key2).toString();
+
+    if (reqMac !== mac) {
+      return res.status(403).json({
+        return_code: -1,
+        return_message: "MAC không hợp lệ",
+      });
+    }
+
+    const dataJson = JSON.parse(dataStr);
+    const { app_trans_id } = dataJson;
+
+    const paymentStatusResponse = await checkPaymentStatusHandler(
+      req,
+      res,
+      app_trans_id
+    );
+
+    if (paymentStatusResponse.return_code === 1) {
+      const embedData = JSON.parse(dataJson.embed_data);
+
+      const newOrderData = {
+        name: embedData.name,
+        email: embedData.email,
+        phone: embedData.phone,
+        total_quantity: embedData.total_quantity,
+        total_price: embedData.total_price,
+        order_status: ORDER_STATUS_CODE["PENDING"],
+        payment_status: PAYMENT_STATUS_CODE["PAID"],
+        order_code: embedData.order_code,
+        user_id: embedData.user_id,
+        delivery_method: DELIVERY_METHOD_CODE[embedData.delivery_method],
+        payment_method: PAYMENT_METHOD_CODE[embedData.payment_method],
+        order_date: "",
+        notes: embedData.notes,
+      };
+
+      const newOrder = await orderService.createOrder(newOrderData);
+
+      for (let item of embedData.detail) {
+        const existedProduct = await productService.findProductById(
+          item.product_id
+        );
+        if (!existedProduct) {
+          console.log(
+            "Sản phẩm không tồn tại khi tạo đơn hàng khi thanh toán online:",
+            item.product_id
+          );
+          continue;
+        }
+
+        try {
+          const resDetail = await orderDetailService.createOrderDetail({
+            quantity: item.quantity,
+            price: item.price,
+            total_price: item.total_price,
+            order_id: newOrder.id,
+            product_id: item.product_id,
+            size_id: item.size_id || null,
+          });
+          await productService.updateProduct(item.product_id, {
+            quantity: existedProduct.quantity - resDetail.quantity,
+          });
+        } catch (e) {
+          console.log(
+            "Lỗi tạo chi tiết đơn hàng khi thanh toán online:",
+            e.message
+          );
+          return;
+        }
+      }
+
+      const orderDate = newOrder.createdAt;
+      newOrder.order_date = orderDate?.toLocaleString(
+        "vi-VN",
+        { timeZone: "Asia/Ho_Chi_Minh" },
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        }
+      );
+      await newOrder.save();
+
+      await emailService.sendEmailCreateOrder(
+        embedData.email,
+        embedData.detail
+      );
+
+      result.return_code = 1;
+      result.return_message = "Đơn hàng đã được tạo thành công";
+      result.order_id = newOrder.id;
+      if (result.return_code === 1) {
+      }
+    } else {
+      result.return_code = 0;
+      result.return_message = "Thanh toán thất bại hoặc đang chờ xử lý";
+    }
+  } catch (ex) {
+    console.error("Lỗi khi xử lý thanh toán online với zalopay:", ex.message);
+    result.return_code = 0;
+    result.return_message = "Có lỗi xảy ra khi xử lý thanh toán";
+  }
+  return res.json(result);
+};
+
+const checkPaymentStatusHandler = async (req, res, app_trans_id) => {
+  const postData = { app_id: configs.app_id, app_trans_id };
+
+  const data = `${postData.app_id}|${postData.app_trans_id}|${configs.key1}`;
+
+  postData.mac = CryptoJS.HmacSHA256(data, configs.key1).toString();
+
+  const postConfigs = {
+    method: "post",
+    url: process.env.CREATE_ZLP_ENDPOINT_QUERY,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    data: qs.stringify(postData),
+  };
+
+  try {
+    const response = await axios(postConfigs);
+
+    return response.data;
+  } catch (error) {
+    console.error("Error checking payment status:", error);
+
+    return {
+      status: false,
+      message: "Có lỗi xảy ra khi kiểm tra trạng thái thanh toán",
+    };
+  }
+};
+
 module.exports = {
   createOrderHandler,
   deleteOrderHandler,
@@ -439,4 +686,7 @@ module.exports = {
   changePaymentStatsHandler,
   getAllOrdersHandler,
   allOrdersHandler,
+  paymentHandler,
+  paymentCallbackHandler,
+  checkPaymentStatusHandler,
 };
